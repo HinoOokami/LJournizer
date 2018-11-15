@@ -1,0 +1,44 @@
+﻿<Window x:Name="wndMain" x:Class="LJournizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LJournizer"
+        mc:Ignorable="d"
+        Title="LJournizer" Height="190.023" Width="647.564" Icon="Q.ico" ResizeMode="NoResize" Background="{x:Null}">
+    <Grid AllowDrop="True" Style="{DynamicResource FocusVisual}" Drop="Grid_Drop">
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="#FF320032" Offset="1"/>
+                <GradientStop Color="Magenta"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+        <Button x:Name="btnBrowse" Content="Обзор" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Style="{DynamicResource ButtonStyleBrowse}" Click="btnBrowse_Click">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FF808064" Offset="1"/>
+                    <GradientStop Color="#FFFFFFC8"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Button x:Name="btnStart" Content="Пуск" HorizontalAlignment="Left" Margin="90,10,0,0" VerticalAlignment="Top" Width="75" IsDefault="True" Style="{DynamicResource ButtonStyleStart}" Click="btnStart_Click">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FF648064" Offset="1"/>
+                    <GradientStop Color="#FFC8FFC8"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Button x:Name ="btnCancel" Content="Отмена" HorizontalAlignment="Left" Margin="170,10,0,0" VerticalAlignment="Top" Width="75" IsCancel="True" Style="{DynamicResource ButtonStyleCancel}" Click="btnCancel_Click">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FF806464" Offset="1"/>
+                    <GradientStop Color="#FFFFC8C8"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Label x:Name="lblInfo" Content="lblInfo" HorizontalAlignment="Left" Margin="10,34,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="lblCount" Content="lblCount" HorizontalAlignment="Left" Margin="10,65,0,0" VerticalAlignment="Top"/>
+
+    </Grid>
+</Window>
