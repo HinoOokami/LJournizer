@@ -12,17 +12,6 @@ namespace LJournizer
 {
     public static class ImageOps
     {
-        static List<string> horizontal;
-        static List<string> vertical;
-        static List<string> square;
-        
-        internal static async Task ImageConvert(ObservableCollection<string> files, int restriction,
-                                                CancellationToken ct)
-        {
-            if (files.Count == 0) return;
-            await Task.Run(async () => Parallel.ForEach(files, path => { ModifyImage(path, restriction, ct); }), ct);
-        }
-
         static (int newWidth, int newHeight) CalculateSize(float imageW, float imageH, int restriction)
         {
             int nW, nH;
@@ -45,7 +34,7 @@ namespace LJournizer
             return (newWidth: nW, newHeight: nH);
         }
 
-        static void ModifyImage(string path, int restriction, CancellationToken ct)
+        internal static void ModifyImage(string path, int restriction, CancellationToken ct)
         {
             if (ct.IsCancellationRequested)
                 ct.ThrowIfCancellationRequested();
@@ -91,13 +80,19 @@ namespace LJournizer
                                     {
                                         Param = {[0] = new EncoderParameter(Encoder.Quality, 90L)}
                                     };
+
             string newPath = ChangeFileName(path, restriction);
-            image.Save(path + "000.jpg", GetEncoder(ImageFormat.Jpeg), encoderParameters);
+            image.Save(newPath, GetEncoder(ImageFormat.Jpeg), encoderParameters);
         }
 
         static string ChangeFileName(string path, int restriction)
         {
-            string newPath = path.Substring(0, path.LastIndexOf('.')) + "_" + restriction + ".jpg";
+            FileInfo fi = new FileInfo(path);
+            DirectoryInfo di = fi.Directory;
+            string newDir = di.CreateSubdirectory("Resized_" + restriction).FullName;
+            string file = Path.GetFileNameWithoutExtension(path);
+            string newPath = newDir + @"\" + file + "_" + restriction + ".jpg";
+
             return newPath;
         }
 

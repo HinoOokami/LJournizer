@@ -41,7 +41,7 @@ namespace LJournizer
 
         void btnStart_Click(object sender, RoutedEventArgs e)
         {
-            controller.ImageConvert(900);
+            controller.StartConvert(900);
         }
 
         //static Image RotateImage(Image image)

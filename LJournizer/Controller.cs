@@ -21,20 +21,26 @@ namespace LJournizer
         static string filesProcessedStr;
         internal static MainWindow main;
         public static ObservableCollection<string> files;
-        bool hasDiffDirs;
+        static int processedCounter;
+
+        //bool hasDiffDirs;
         CancellationTokenSource cts;
 
         public Controller(MainWindow mainWindow)
         {
+            processedCounter = 0;
+            main = mainWindow;
             searchPattern = "*.jpg|*.jpeg|*.png|*.bmp|*.gif";
             filesSelectedStr = "Выбрано файлов: ";
             filesProcessedStr = "Обработано файлов: ";
-            hasDiffDirs = false;
-            files = new ObservableCollection<string>();
-            main = mainWindow;
+
+            main.lblInfo.Content = "Выберите папку с изображениями или перетащите папки и/или файлы в окно программы";
+            //hasDiffDirs = false;
+            
             di = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             path = di.FullName;
-            main.lblInfo.Content = "Выберите папку с изображениями или перетащите папки и/или файлы в окно программы";
+
+            files = new ObservableCollection<string>();
             LblCount(files.Count);
             files.CollectionChanged += FilesChanged;
         }
@@ -42,17 +48,22 @@ namespace LJournizer
         void FilesChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             LblCount(files.Count);
-            CheckDiffDirs();
+            //CheckDiffDirs();
         }
 
-        void CheckDiffDirs()
-        {
-            if (!hasDiffDirs && !files.Contains(path)) hasDiffDirs = true;
-        }
+        //void CheckDiffDirs()
+        //{
+        //    if (!hasDiffDirs && !files.Contains(path)) hasDiffDirs = true;
+        //}
 
         internal static void LblCount(int count)
         {
             main.Dispatcher.Invoke(() => { main.lblCount.Content = filesSelectedStr + count; });
+        }
+
+        internal static void LblProcessed(int processedCounter, int count)
+        {
+            main.Dispatcher.Invoke(() => { main.lblCount.Content = filesProcessedStr + processedCounter + @"/" + count; });
         }
 
         internal async Task FileBrowseAsync()
@@ -73,7 +84,7 @@ namespace LJournizer
                     path = vfbd.SelectedPath;
                     main.lblInfo.Content = path;
                     di = new DirectoryInfo(path);
-                    await FileOps.FilterFilesAsync(files, new[] { path }, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
+                    await SearchOps.FilterFilesAsync(files, new[] { path }, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
                 }
 
             }
@@ -93,7 +104,7 @@ namespace LJournizer
                                        });
                 cts = new CancellationTokenSource();
                 string[] paths = (string[]) e.Data.GetData(DataFormats.FileDrop, true);
-                await FileOps.FilterFilesAsync(files, paths, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
+                await SearchOps.FilterFilesAsync(files, paths, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
             }
             catch (OperationCanceledException ex){}
         }
@@ -105,12 +116,13 @@ namespace LJournizer
                                        main.lblInfo.Content = "Поиск завершён";
                                        main.btnBrowse.IsEnabled = true;
                                        main.btnStart.IsEnabled = true;
-                                       main.btnCancel.IsEnabled = false;
+                                       main.btnCancel.IsEnabled = true;
                                    });
         }
 
         void ConvertationComplete()
         {
+            processedCounter = 0;
             main.Dispatcher.Invoke(() =>
                                    {
                                        main.lblInfo.Content = "Конвертация завершена";
@@ -119,14 +131,14 @@ namespace LJournizer
                                        main.btnCancel.IsEnabled = false;
                                    });
             files.Clear();
-            hasDiffDirs = false;
+            //hasDiffDirs = false;
         }
 
         internal void Reset()
         {
             cts.Cancel();
-            files.Clear();
-            hasDiffDirs = false;
+            processedCounter = 0;
+            //hasDiffDirs = false;
             main.Dispatcher.Invoke(() =>
                                    {
                                        main.lblInfo.Content = "Операция отменена";
@@ -134,9 +146,10 @@ namespace LJournizer
                                        main.btnStart.IsEnabled = false;
                                        main.btnCancel.IsEnabled = false;
                                    });
+            files.Clear();
         }
 
-        public async Task ImageConvert(int restriction)
+        public async Task StartConvert(int restriction)
         {
             try
             {
@@ -148,9 +161,21 @@ namespace LJournizer
                                            main.btnCancel.IsEnabled = true;
                                        });
                 cts = new CancellationTokenSource();
-                await ImageOps.ImageConvert(files, restriction, cts.Token).ContinueWith(n => ConvertationComplete());
+                await ImageConvert(files, restriction, cts.Token).ContinueWith(n => ConvertationComplete());
             }
             catch (OperationCanceledException ex){}
+        }
+
+        internal static async Task ImageConvert(ObservableCollection<string> files, int restriction,
+                                                CancellationToken ct)
+        {
+            if (files.Count == 0) return;
+            await Task.Run(() => Parallel.ForEach(files, path =>
+                                                         {
+                                                             ImageOps.ModifyImage(path, restriction, ct);
+                                                             Interlocked.Increment(ref processedCounter);
+                                                             LblProcessed(processedCounter, files.Count);
+                                                         }), ct);
         }
     }
 }

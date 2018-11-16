@@ -7,13 +7,13 @@ using Path = System.IO.Path;
 
 namespace LJournizer
 {
-    public static class FileOps
+    public static class SearchOps
     {
         static string[] searchPatterns;
         static SearchOption searchOption;
         static bool hasDiffDirs;
 
-        static FileOps()
+        static SearchOps()
         {
             hasDiffDirs = false;
             searchOption = SearchOption.TopDirectoryOnly;
