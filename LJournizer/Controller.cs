@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Resources;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +41,7 @@ namespace LJournizer
             main.lblInfo.Content = "Выберите папку с изображениями или перетащите папки и/или файлы в окно программы";
             //hasDiffDirs = false;
             main.txtBoxDim.Text = 900.ToString();
-            
+
             di = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             path = di.FullName;
 
@@ -58,7 +59,8 @@ namespace LJournizer
             if (restriction < 128 || restriction > 2560)
             {
                 main.btnStart.IsEnabled = false;
-                main.Dispatcher.Invoke(() => main.lblInfo.Content = "Значение размера должно быть в пределах 128 - 2560");
+                main.Dispatcher.Invoke(() => main.lblInfo.Content =
+                                                 "Значение размера должно быть в пределах 128 - 2560");
             }
             else if (isFinishedSearch) main.Dispatcher.Invoke(() => main.btnStart.IsEnabled = true);
         }
@@ -81,7 +83,10 @@ namespace LJournizer
 
         internal static void LblProcessed(int processedCounter, int count)
         {
-            main.Dispatcher.Invoke(() => { main.lblCount.Content = filesProcessedStr + processedCounter + @"/" + count; });
+            main.Dispatcher.Invoke(() =>
+                                   {
+                                       main.lblCount.Content = filesProcessedStr + processedCounter + @"/" + count;
+                                   });
         }
 
         //internal async Task FileBrowseAsync()
@@ -141,11 +146,14 @@ namespace LJournizer
                     path = dlg.FileName;
                     main.lblInfo.Content = path;
                     di = new DirectoryInfo(path);
-                    await SearchOps.FilterFilesAsync(files, new[] { path }, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
+                    await SearchOps.FilterFilesAsync(files, new[] {path}, searchPattern, cts.Token)
+                                   .ContinueWith(n => SearchComplete());
                 }
 
             }
-            catch (OperationCanceledException ex) { }
+            catch (OperationCanceledException ex)
+            {
+            }
         }
 
         internal async Task FilesDropAsync(DragEventArgs e)
@@ -161,9 +169,12 @@ namespace LJournizer
                                        });
                 cts = new CancellationTokenSource();
                 string[] paths = (string[]) e.Data.GetData(DataFormats.FileDrop, true);
-                await SearchOps.FilterFilesAsync(files, paths, searchPattern, cts.Token).ContinueWith(n => SearchComplete());
+                await SearchOps.FilterFilesAsync(files, paths, searchPattern, cts.Token)
+                               .ContinueWith(n => SearchComplete());
             }
-            catch (OperationCanceledException ex){}
+            catch (OperationCanceledException ex)
+            {
+            }
         }
 
         void SearchComplete()
@@ -221,25 +232,56 @@ namespace LJournizer
                 cts = new CancellationTokenSource();
                 await ImageConvert(files, restriction, cts.Token).ContinueWith(n => ConvertationComplete());
             }
-            catch (Exception ex){}
+            catch (OperationCanceledException ex){}
         }
+
+        //internal static async Task ImageConvert(ObservableCollection<string> files, int restriction,
+        //                                        CancellationToken ct)
+        //{
+        //    if (files.Count == 0) return;
+        //    await Task.Run(async () => Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = 1 }, async path =>
+        //                                                       {
+        //                                                           try
+        //                                                           {
+        //                                                               if (files.Count == 0) return;
+        //                                                               await ImageOps
+        //                                                                  .ModifyImage(path, restriction, ct);
+        //                                                               Interlocked.Increment(ref processedCounter);
+        //                                                               LblProcessed(processedCounter, files.Count);
+        //                                                           }
+
+        //                                                           catch (OperationCanceledException ex)
+        //                                                           {
+        //                                                               throw ex; }
+        //                                                     if (ct.IsCancellationRequested)
+        //                                                         ct.ThrowIfCancellationRequested();
+        //                                                 }), ct);
+        //}
 
         internal static async Task ImageConvert(ObservableCollection<string> files, int restriction,
                                                 CancellationToken ct)
         {
             if (files.Count == 0) return;
-            await Task.Run(() => Parallel.ForEach(files, path =>
-                                                         {
-                                                             if (ct.IsCancellationRequested)
-                                                                 ct.ThrowIfCancellationRequested();
-                                                             try
-                                                             {
-                                                                 ImageOps.ModifyImage(path, restriction, ct);
-                                                                 Interlocked.Increment(ref processedCounter);
-                                                                 LblProcessed(processedCounter, files.Count);
-                                                             }
-                                                             catch (OperationCanceledException ex) { }
-                                                         }), ct);
+            await Task.Run(async () =>
+                           {
+                               foreach (var path in files)
+                               {
+                                   try
+                                   {
+                                       if (files.Count == 0) return;
+                                       await ImageOps.ModifyImage(path, restriction, ct);
+                                       Interlocked.Increment(ref processedCounter);
+                                       LblProcessed(processedCounter, files.Count);
+                                   }
+                                   catch (OperationCanceledException ex)
+                                   {
+                                       throw ex;
+                                   }
+
+                                   if (ct.IsCancellationRequested)
+                                       ct.ThrowIfCancellationRequested();
+                               }
+                           }, ct);
         }
     }
 }

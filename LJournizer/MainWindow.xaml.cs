@@ -41,9 +41,9 @@ namespace LJournizer
             controller.Reset();
         }
 
-        void btnStart_Click(object sender, RoutedEventArgs e)
+        async void btnStart_Click(object sender, RoutedEventArgs e)
         {
-            controller.StartConvert();
+            await controller.StartConvert();
         }
 
         void TxtBoxDim_PreviewTextInput(object sender, TextCompositionEventArgs e)

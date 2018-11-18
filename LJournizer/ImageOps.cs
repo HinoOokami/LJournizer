@@ -34,17 +34,19 @@ namespace LJournizer
             return (newWidth: nW, newHeight: nH);
         }
 
-        internal static void ModifyImage(string path, int restriction, CancellationToken ct)
+        internal static async Task ModifyImage(string path, int restriction, CancellationToken ct)
         {
-            if (ct.IsCancellationRequested)
-                ct.ThrowIfCancellationRequested();
             using (Stream stream = File.OpenRead(path))
             {
                 using (Image image = Image.FromStream(stream, true, true))
                 {
+                    if ((image.Width >= image.Height)? image.Width == restriction: image.Height == restriction) return;
+
                     Image rotatedImage = RotateImage(image);
                     (int newWidth, int newHeight) newSize = CalculateSize(rotatedImage.Width, rotatedImage.Height, restriction);
-                    ToJPG(Resize(rotatedImage, newSize), path, restriction);
+                    await Task.Run(async () => ToJPG(Resize(rotatedImage, newSize), path, restriction, ct));
+                    if (ct.IsCancellationRequested)
+                        ct.ThrowIfCancellationRequested();
                 }
             }
         }
@@ -74,7 +76,7 @@ namespace LJournizer
             return destImage;
         }
 
-        static void ToJPG(Image image, string path, int restriction)
+        static async Task ToJPG(Image image, string path, int restriction, CancellationToken ct)
         {
             var encoderParameters = new EncoderParameters(1)
                                     {
@@ -82,7 +84,9 @@ namespace LJournizer
                                     };
 
             string newPath = ChangeFileName(path, restriction);
-            image.Save(newPath, GetEncoder(ImageFormat.Jpeg), encoderParameters);
+            await Task.Run(async () => image.Save(newPath, GetEncoder(ImageFormat.Jpeg), encoderParameters), ct);
+            if (ct.IsCancellationRequested)
+                ct.ThrowIfCancellationRequested();
         }
 
         static string ChangeFileName(string path, int restriction)

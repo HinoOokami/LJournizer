@@ -11,11 +11,9 @@ namespace LJournizer
     {
         static string[] searchPatterns;
         static SearchOption searchOption;
-        static bool hasDiffDirs;
-
+        
         static SearchOps()
         {
-            hasDiffDirs = false;
             searchOption = SearchOption.TopDirectoryOnly;
         }
 
